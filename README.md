@@ -53,9 +53,9 @@ To register the instances FQDN on AWS Route53 service you need to set the
 - `public_zone_id` - The ID of the hosted zone for the public DNS record(s). Requires `associate_public_ip_address` to be set to 'true'. *[default value: '']*
 - `root_volume_iops` - The amount of provisioned IOPS (for 'io1' type only). *[default value: 0]*
 - `root_volume_size` - The volume size in gigabytes. *[default value: '8']*
-- `root_volume_type` - The volume type. Must be one of 'standard' (magnetic), 'gp2' (general purpose SSD), or 'io1' (provisioned IOPS SSD). *[default value: gp2]*
+- `root_volume_type` - The volume type. Must be one of 'standard' (magnetic), 'gp2' (general purpose SSD), or 'io1' (provisioned IOPS SSD). *[default value: 'gp2']*
 - `subnet_ids` - **[required]** List of Subnet IDs to launch the instance(s) in (e.g.: ['subnet-0zfg04s2','subnet-6jm2z54q']).
-- `ttl` - The TTL (in seconds) for the DNS record(s)." *[default value: '600']*
+- `ttl` - The TTL (in seconds) for the DNS record(s). *[default value: '600']*
 - `vpc_id` - **[required]** The VPC ID for the security group(s).
 
 ## Usage
