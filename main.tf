@@ -11,12 +11,34 @@
 #
 
 #
+# Apache Zookeeper AMI.
+#
+
+data "aws_ami" "zookeeper" {
+  most_recent = true
+  name_regex  = "^${var.prefix}${var.name}-.*-(\\d{14})$"
+  owners      = ["self"]
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+  filter {
+    name   = "name"
+    values = ["${var.ami_prefix}${var.ami_name}-*"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+#
 # Apache Zookeeper instance(s).
 #
 
 resource "aws_instance" "zookeeper" {
   count                       = "${var.number_of_instances}"
-  ami                         = "${var.ami_id}"
+  ami                         = "${data.aws_ami.zookeeper.id}"
   associate_public_ip_address = "${var.associate_public_ip_address}"
   instance_type               = "${var.instance_type}"
   key_name                    = "${var.keyname}"

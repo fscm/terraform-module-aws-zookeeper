@@ -10,8 +10,15 @@
 # terms of the MIT License.
 #
 
-variable "ami_id" {
-  description = "The id of the AMI to use for the instance(s)."
+variable "ami_name" {
+  description = "The name of the AMI to use for the instance(s)."
+  default     = "zookeeper"
+  type        = "string"
+}
+
+variable "ami_prefix" {
+  description = "The prefix of the AMI to use for the instance(s)."
+  default     = ""
   type        = "string"
 }
 
