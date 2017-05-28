@@ -20,7 +20,7 @@ resource "aws_instance" "zookeeper" {
   associate_public_ip_address = "${var.associate_public_ip_address}"
   instance_type               = "${var.instance_type}"
   key_name                    = "${var.keyname}"
-  subnet_id                   = "${element(var.subnet_ids, count.index - 1)}"
+  subnet_id                   = "${element(var.subnet_ids, count.index)}"
   user_data                   = "${element(data.template_file.zookeeper.*.rendered, count.index)}"
   vpc_security_group_ids      = ["${aws_security_group.zookeeper.id}","${aws_security_group.zookeeper_intra.id}","${var.extra_security_group_id}"]
   root_block_device {
