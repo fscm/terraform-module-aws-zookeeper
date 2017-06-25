@@ -57,6 +57,7 @@ To register the instances FQDN on AWS Route53 service you need to set the
 - `root_volume_type` - The volume type. Must be one of 'standard' (magnetic), 'gp2' (general purpose SSD), or 'io1' (provisioned IOPS SSD). *[default value: 'gp2']*
 - `subnet_ids` - **[required]** List of Subnet IDs to launch the instance(s) in (e.g.: ['subnet-0zfg04s2','subnet-6jm2z54q']).
 - `ttl` - The TTL (in seconds) for the DNS record(s). *[default value: '600']*
+- `use_asg` - Set to true to use an Auto Scaling Group for the cluster. See the [Auto Scaling Group Option](#auto-scaling-group-option) section for more information. *[default value: false]*
 - `vpc_id` - **[required]** The VPC ID for the security group(s).
 
 ## Usage
@@ -84,6 +85,23 @@ module "my_zookeeper_cluster" {
 - `ip` - **[type: list]** List of private IP address of the Apache Zookeeper instance(s).
 - `security_group` - **[type: string]** ID of the security group to be added to every instance that requires access to the Apache Zookeeper Cluster.
 - `ssh_key` - **[type: string]** The name of the SSH key used.
+
+## Auto Scaling Group Option
+
+The auto scaling group feature will allow for unresponsive instances of the
+cluster to be replaced with newer ones automatically.
+
+In some cases this could lead to **data corruption/loss**.
+
+This feature is more suitable to volatile environments and thus not recommended
+for production clusters (where the information stored on the Zookeeper nodes
+can not be lost and/or restored).
+
+### Auto Scaling Group Limitation
+
+Due to the way Elastic Network Interfaces have to be assigned to the Zookeeper
+instances, on this method of creating the cluster, there can only be **one
+instance per subnet**.
 
 ## Cluster Access
 

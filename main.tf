@@ -37,7 +37,7 @@ data "aws_ami" "zookeeper" {
 #
 
 resource "aws_instance" "zookeeper" {
-  count                       = "${var.number_of_instances}"
+  count                       = "${var.use_asg ? 0 : var.number_of_instances}"
   ami                         = "${data.aws_ami.zookeeper.id}"
   associate_public_ip_address = "${var.associate_public_ip_address}"
   instance_type               = "${var.instance_type}"
@@ -58,7 +58,7 @@ resource "aws_instance" "zookeeper" {
 }
 
 data "template_file" "zookeeper" {
-  count    = "${var.number_of_instances}"
+  count    = "${var.use_asg ? 0 : var.number_of_instances}"
   template = "${file("${path.module}/templates/cloud-config/init.tpl")}"
   vars {
     domain         = "${var.domain}"
@@ -78,13 +78,33 @@ data "template_file" "zookeeper_id" {
 }
 
 #
+# Apache Zookeeper Auto Scaling Group (ASG).
+#
+
+#
+# Apache Zookeeper Elastic Network Interfaces (for the ASG).
+#
+
+resource "aws_network_interface" "zookeeper" {
+  count             = "${var.use_asg ? var.number_of_instances : 0}"
+  subnet_id         = "${element(var.subnet_ids, count.index)}"
+  security_groups   = ["${aws_security_group.zookeeper.id}","${aws_security_group.zookeeper_intra.id}","${var.extra_security_group_id}"]
+  source_dest_check = false
+  tags {
+    Name      = "${var.prefix}${var.name}${format("%02d", count.index + 1)}"
+    Zookeeper = "true"
+    Service   = "Zookeeper"
+  }
+}
+
+#
 # Apache Zookeeper DNS record(s).
 #
 
 resource "aws_route53_record" "private" {
   count   = "${var.private_zone_id != "" ? var.number_of_instances : 0}"
   name    = "${var.prefix}${var.name}${format("%02d", count.index + 1)}"
-  records = ["${element(aws_instance.zookeeper.*.private_ip, count.index)}"]
+  records = ["${element(aws_instance.zookeeper.*.private_ip, count.index)}"] # rewrite for the ENI
   ttl     = "${var.ttl}"
   type    = "A"
   zone_id = "${var.private_zone_id}"
@@ -93,7 +113,7 @@ resource "aws_route53_record" "private" {
 resource "aws_route53_record" "public" {
   count   = "${var.public_zone_id != "" && var.associate_public_ip_address ? var.number_of_instances : 0}"
   name    = "${var.prefix}${var.name}${format("%02d", count.index + 1)}"
-  records = ["${element(aws_instance.zookeeper.*.public_ip, count.index)}"]
+  records = ["${element(aws_instance.zookeeper.*.public_ip, count.index)}"] # rewrite for the ENI
   ttl     = "${var.ttl}"
   type    = "A"
   zone_id = "${var.public_zone_id}"

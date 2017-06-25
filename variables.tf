@@ -115,6 +115,12 @@ variable "ttl" {
   type        = "string"
 }
 
+variable "use_asg" {
+  description = "Set to true to use an Auto Scaling Group for the cluster."
+  default     = false
+  type        = "string"
+}
+
 variable "vpc_id" {
   description = "The VPC ID for the security group(s)."
   type        = "string"
