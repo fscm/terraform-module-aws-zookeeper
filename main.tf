@@ -82,7 +82,7 @@ data "template_file" "zookeeper_id" {
 #
 
 #
-# Apache Zookeeper Elastic Network Interfaces (for the ASG).
+# Apache Zookeeper Elastic Network Interface(s) (for the ASG).
 #
 
 resource "aws_network_interface" "zookeeper" {
