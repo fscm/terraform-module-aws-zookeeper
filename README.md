@@ -88,6 +88,8 @@ module "my_zookeeper_cluster" {
 
 ## Auto Scaling Group Option
 
+**- beta feature -**
+
 The auto scaling group feature will allow for unresponsive instances of the
 cluster to be replaced with newer ones automatically.
 

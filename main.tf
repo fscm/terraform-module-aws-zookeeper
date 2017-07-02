@@ -81,6 +81,125 @@ data "template_file" "zookeeper_id" {
 # Apache Zookeeper Auto Scaling Group (ASG).
 #
 
+resource "aws_autoscaling_group" "zookeeper" {
+  count                     = "${var.use_asg ? 1 : 0}"
+  desired_capacity          = "${var.number_of_instances}"
+  health_check_grace_period = 300
+  health_check_type         = "EC2"
+  launch_configuration      = "${aws_launch_configuration.zookeeper.name}"
+  max_size                  = "${var.number_of_instances}"
+  min_size                  = "${var.number_of_instances}"
+  name                      = "${var.prefix}${var.name}"
+  vpc_zone_identifier       = "${slice(var.subnet_ids, 0, var.number_of_instances)}"
+  lifecycle {
+    create_before_destroy = true
+  }
+  tag {
+    key                 = "Name"
+    value               = "${var.prefix}${var.name}"
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "Zookeeper"
+    value               = "true"
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "Service"
+    value               = "Zookeeper"
+    propagate_at_launch = true
+  }
+}
+
+resource "aws_launch_configuration" "zookeeper" {
+  associate_public_ip_address = false
+  iam_instance_profile        = "${aws_iam_instance_profile.zookeeper_eni.arn}"
+  image_id                    = "${data.aws_ami.zookeeper.id}"
+  instance_type               = "${var.instance_type}"
+  key_name                    = "${var.keyname}"
+  name_prefix                 = "${var.prefix}${var.name}-"
+  security_groups             = ["${aws_security_group.zookeeper.id}","${aws_security_group.zookeeper_intra.id}","${var.extra_security_group_id}"]
+  user_data = "${data.template_file.zookeeper_asg.rendered}"
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+data "template_file" "zookeeper_asg" {
+  count    = "${var.use_asg ? 1 : 0}"
+  template = "${file("${path.module}/templates/cloud-config/init_asg.tpl")}"
+  vars {
+    domain         = "${var.domain}"
+    eni_reference  = "${var.prefix}${var.name}"
+    hostname       = "${var.prefix}${var.name}"
+    zookeeper_addr = "${join(",", data.template_file.zookeeper_asg_addr.*.rendered)}"
+    zookeeper_args = "-n ${join(",", data.template_file.zookeeper_id.*.rendered)} ${var.heap_size == "" ? var.heap_size : "-m var.heap_size"}"
+  }
+}
+
+data "template_file" "zookeeper_asg_addr" {
+  count    = "${var.use_asg ? var.number_of_instances : 0}"
+  template = "$${index}:$${address}"
+  vars {
+    address = "${element(split(",", replace(replace(replace(format("%s", aws_network_interface.zookeeper.*.private_ips), "/[^\\s\\d\\.]/", ""), "/(\\d)\\s+/", "$1,"), "/\\s+/", "")), count.index)}"
+    index   = "${count.index + 1}"
+  }
+}
+
+#
+# Apache Zookeeper Policies and Roles (for the ASG).
+#
+
+resource "aws_iam_instance_profile" "zookeeper_eni" {
+  name  = "${var.prefix}${var.name}-zookeeper-eni"
+  roles = ["${aws_iam_role.zookeeper_eni.id}"]
+}
+
+resource "aws_iam_role" "zookeeper_eni" {
+  name               = "${var.prefix}${var.name}-zookeeper-eni"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "zookeeper_eni" {
+  name  = "${var.prefix}${var.name}-zookeeper-eni"
+  role = "${aws_iam_role.zookeeper_eni.id}"
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "ec2:AttachNetworkInterface",
+        "ec2:CreateNetworkInterface",
+        "ec2:DeleteNetworkInterface",
+        "ec2:DescribeNetworkInterfaceAttribute",
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:DetachNetworkInterface",
+        "ec2:ModifyInstanceAttribute",
+        "ec2:ModifyNetworkInterfaceAttribute"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
 #
 # Apache Zookeeper Elastic Network Interface(s) (for the ASG).
 #
@@ -92,6 +211,7 @@ resource "aws_network_interface" "zookeeper" {
   source_dest_check = false
   tags {
     Name      = "${var.prefix}${var.name}${format("%02d", count.index + 1)}"
+    Reference = "${var.prefix}${var.name}"
     Zookeeper = "true"
     Service   = "Zookeeper"
   }
