@@ -259,12 +259,6 @@ resource "aws_security_group" "zookeeper" {
     protocol  = "tcp"
     self      = true
   }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
   lifecycle {
     create_before_destroy = true
   }
@@ -290,11 +284,36 @@ resource "aws_security_group" "zookeeper_intra" {
     protocol  = "tcp"
     self      = true
   }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   lifecycle {
     create_before_destroy = true
   }
   tags {
     Name      = "${var.prefix}${var.name}-intra"
+    Zookeeper = "true"
+    Service   = "Zookeeper"
+  }
+}
+
+resource "aws_security_group" "zookeeper_monit" {
+  name   = "${var.prefix}${var.name}-monit"
+  vpc_id = "${var.vpc_id}"
+  ingress {
+    from_port = 7199
+    to_port   = 7199
+    protocol  = "tcp"
+    self      = true
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
+  tags {
+    Name      = "${var.prefix}${var.name}-monit"
     Zookeeper = "true"
     Service   = "Zookeeper"
   }

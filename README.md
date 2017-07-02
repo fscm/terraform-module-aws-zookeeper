@@ -84,6 +84,7 @@ module "my_zookeeper_cluster" {
 - `id` - **[type: list]** List of IDs of the Apache Zookeeper instance(s).
 - `ip` - **[type: list]** List of private IP address of the Apache Zookeeper instance(s).
 - `security_group` - **[type: string]** ID of the security group to be added to every instance that requires access to the Apache Zookeeper Cluster.
+- `security_group_monit` - **[type: string]** ID of the security group to be added to every instance that requires access to the JMX port of the Apache Zookeeper Cluster nodes.
 - `ssh_key` - **[type: string]** The name of the SSH key used.
 
 ## Auto Scaling Group Option
